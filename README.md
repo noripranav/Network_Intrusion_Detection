@@ -1,9 +1,3 @@
-# ANOMALISE
-# 🚨 Network Anomaly Detection using Machine Learning
-
-A Comparative Study of Supervised and Unsupervised Models for Intrusion Detection  
-**Course Project | Pattern Recognition and Machine Learning (CSL2050)**  
-**IIT Jodhpur**
 
 ## 📌 Overview
 
@@ -48,46 +42,7 @@ Our goal: **Build an accurate, robust, and scalable Intrusion Detection System (
 ---
 
 
-🛠️ Setup & Usage Instructions (Windows)
 
-
-1.✅ Prerequisites
-Python 3.7+ must be installed.
-
-For Windows, ensure:
-
-Npcap is installed.
-
-Sudo Mode and Developer Mode are enabled:
-
-Go to Settings → System → For Developers
-
-Enable Developer Mode and Sudo Mode
-
-2.📦 Environment Setup
-Create a virtual environment and install dependencies:
-
-```bash
-# Clone the repository
-git clone https://github.com/jyothsna1076/AnamolyDetectionPRMLProject.git
-cd AnamolyDetectionPRMLProject
-```
-
-For Windows :
-```bash
-# Create and activate virtual environment
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-For Linux :
-```bash
-# Create and activate virtual environment
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
 
 
 3.🚀 Running the Application
@@ -163,19 +118,6 @@ AnamolyDetectionPRMLProject/
 
 ---
 
-## 👥 Team Members & Contributions
-
-| Name                | Contribution                                |
-|---------------------|---------------------------------------------|
-| Vadlamudi Jyothsna | Random Forest, project documentation        |
-| Pradeepika Nori    | SVM implementation, UI integration          |
-| Nishu Verma         | Logistic Regression                         |
-| BhagyaShree         | KNN implementation                          |
-| Reshma Maurya       | Naive Bayes implementation                  |
-| Nagma Saj           | Gaussian Mixture Model implementation       |
-
----
-
 ## 📈 Results & Conclusion
 
 Random Forest consistently outperformed other models in both accuracy and generalization. Despite its simplicity, Logistic Regression also performed competitively. Models like KNN and GMM lagged behind in inference time and assumptions.
@@ -183,21 +125,3 @@ Random Forest consistently outperformed other models in both accuracy and genera
 > ✅ **Takeaway**: Ensemble methods like Random Forest are powerful for IDS tasks due to their robustness and low overfitting tendencies.
 
 ---
-
-## 📜 License
-
-This project is for academic use under the **MIT License**.
-
----
-
-## 📞 Contact
-
-For queries or collaborations, reach out to:  
-📧 b23cs1076@iitj.ac.in  
-📧 b23cs1007@iitj.ac.in  
-📧 b23cs1034@iitj.ac.in  
-📧 b23cs1045@iitj.ac.in
-📧 b23cs1047@iitj.ac.in
-📧 b23ee1043@iitj.ac.in  
-
-
