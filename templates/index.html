@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Real-Time NIDS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(120deg, #a1c4fd, #c2e9fb);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+            color: #2c3e50;
+        }
+
+        .container {
+            background: #fff;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+            width: 1000px;
+        }
+
+        .container img {
+            max-width: 120px;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        h1 {
+            font-size: 40px;
+            margin-bottom: 10px;
+            color: #34495e;
+        }
+
+        h3 {
+            margin: 20px 0 10px;
+            color: #7f8c8d;
+        }
+
+        button {
+            padding: 14px 26px;
+            font-size: 18px;
+            margin: 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background-color: #3498db;
+            color: white;
+            transition: background-color 0.3s, transform 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+            transform: scale(1.05);
+        }
+
+        input[type="file"] {
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        #status {
+            margin-top: 30px;
+            font-size: 18px;
+            font-style: italic;
+            color: #8e44ad;
+        }
+
+        #results {
+            margin-top: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #2d3436;
+            text-align: left;
+            white-space: pre-wrap;
+            max-height: 300px;           /* LIMIT height */
+            overflow-y: auto;            /* ENABLE scroll */
+            padding-right: 10px;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.6s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container fade-in">
+        <img src="https://cdn-icons-png.flaticon.com/512/17810/17810712.png" alt="Intrusion Detection Icon" width="120" height="120">
+        <h1>Real-Time Network Intrusion Detection</h1>
+        <hr>
+        <h2>Check how safe the network you're using is!</h2>
+        <button onclick="startMonitoring()">
+            <i class="fas fa-broadcast-tower"></i> Capture Real Traffic
+        </button>
+<hr>
+    <h2>Have network data of your own? Upload it!</h2>
+        <input type="file" id="fileInput" />
+        <button onclick="checkManually()">
+            <i class="fas fa-folder-open"></i> Check Manually
+        </button>
+
+        <div id="status"></div>
+        <pre id="results"></pre>
+    </div>
+
+    <script>
+        function fetchResults() {
+            fetch('/get-predictions')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.predictions) {
+                        const resultText = data.predictions.some(p => p.includes('anomaly'))
+                            ? "Anomaly Detected!"
+                            : "Traffic Appears Normal.";
+                        document.getElementById("results").innerText = resultText;
+                        document.getElementById("status").innerText = "Prediction Complete";
+                    } else if (data.status === 'processing') {
+                        document.getElementById("status").innerText = "⏳ Still processing... checking again soon.";
+                        setTimeout(fetchResults, 3000);
+                    } else if (data.error) {
+                        document.getElementById("status").innerText = "Error: " + data.error;
+                    } else {
+                        document.getElementById("status").innerText = data.message || "Waiting to start.";
+                    }
+                });
+        }
+
+        function checkManually() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert("Please select a file first.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            document.getElementById("status").innerText = "Uploading and processing file...";
+            document.getElementById("results").innerText = "";
+
+            fetch('/manual-check', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                showSummaryText(data.summary);
+            })
+            .catch(error => {
+                document.getElementById("status").innerText = "Error: " + error;
+            });
+        }
+
+        function startMonitoring() {
+            document.getElementById("status").innerText = "Monitoring started... Please wait.";
+            document.getElementById("results").innerText = "";
+
+            fetch('/start-monitoring', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data.status);
+                    startCountdown(30);
+                    pollForResults();
+                });
+        }
+
+        function startCountdown(seconds) {
+            let remaining = seconds;
+            const statusDiv = document.getElementById("status");
+
+            const interval = setInterval(() => {
+                statusDiv.innerHTML = `⏳ Still processing... Capturing data for <strong>${remaining}</strong> more seconds.`;
+                remaining--;
+
+                if (remaining < 0) {
+                    clearInterval(interval);
+                }
+            }, 1000);
+        }
+
+        function showSummaryText(summaryText) {
+            document.getElementById("results").innerText = summaryText;
+            document.getElementById("status").innerText = "Prediction Complete!";
+        }
+
+        function pollForResults() {
+            fetch('/get-predictions')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'done' && data.output) {
+                        showSummaryText(data.output);
+                    } else if (data.status === 'processing') {
+                        document.getElementById("status").innerText = "🔁 Still processing... checking again soon.";
+                        setTimeout(pollForResults, 3000);
+                    } else if (data.error) {
+                        document.getElementById("status").innerText = "Error: " + data.error;
+                    }
+                });
+        }
+    </script>
+</body>
+</html>

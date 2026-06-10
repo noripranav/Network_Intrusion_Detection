@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Real-Time NIDS</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to right, #ece9e6, #ffffff);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+            color: #333;
+        }
+
+        h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        h3 {
+            margin: 20px 0 10px;
+            color: #666;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 18px;
+            margin: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background-color: #3498db;
+            color: white;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+            transform: scale(1.05);
+        }
+
+        input[type="file"] {
+            padding: 10px;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        #status {
+            margin-top: 30px;
+            font-size: 18px;
+            font-style: italic;
+            color: #8e44ad;
+        }
+
+        #results {
+            margin-top: 10px;
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .container {
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 90%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Network Intrusion Detection System</h1>
+        <button onclick="startMonitoring()">📡 Capture Real Traffic</button>
+
+        <h3>OR</h3>
+        <input type="file" id="fileInput" />
+        <button onclick="checkManually()">📁 Check Manually</button>
+
+        <div id="status"></div>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function fetchResults() {
+            fetch('/get-predictions')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.predictions) {
+                        const resultText = data.predictions.some(p => p.includes('anomaly'))
+                            ? "Anomaly Detected!"
+                            : "Traffic Appears Normal.";
+                        document.getElementById("results").innerText = resultText;
+                        document.getElementById("status").innerText = "Prediction Complete";
+                    } else if (data.status === 'processing') {
+                        document.getElementById("status").innerText = "Still processing... checking again soon.";
+                        setTimeout(fetchResults, 3000);
+                    } else if (data.error) {
+                        document.getElementById("status").innerText = "Error: " + data.error;
+                    } else {
+                        document.getElementById("status").innerText = data.message || "Waiting to start.";
+                    }
+                });
+        }
+
+        function checkManually() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert("Please select a file first.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            document.getElementById("status").innerText = "Uploading and processing file...";
+            document.getElementById("results").innerText = "";
+
+            fetch('/manual-check', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.predictions) {
+                        const resultText = data.predictions.some(p => p.includes('anomaly'))
+                            ? "Anomaly Detected in File!"
+                            : "File Traffic Appears Normal.";
+                        document.getElementById("results").innerText = resultText;
+                        document.getElementById("status").innerText = "Manual File Prediction Complete";
+                    } else if (data.error) {
+                        document.getElementById("status").innerText = "Error: " + data.error;
+                    }
+                })
+                .catch(error => {
+                    document.getElementById("status").innerText = "Error: " + error;
+                });
+        }
+
+        function startMonitoring() {
+            document.getElementById("status").innerText = "🔍 Monitoring started... Please wait.";
+            document.getElementById("results").innerText = "";
+
+            fetch('/start-monitoring', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data.status);
+                    startCountdown(30);
+                    pollForResults();
+                });
+        }
+
+        function startCountdown(seconds) {
+            let remaining = seconds;
+            const statusDiv = document.getElementById("status");
+
+            const interval = setInterval(() => {
+                statusDiv.innerHTML = `⏳ Still processing... The data is captured in <strong>${remaining}</strong> seconds.`;
+                remaining--;
+
+                if (remaining < 0) {
+                    clearInterval(interval);
+                }
+            }, 1000);
+        }
+
+
+        function pollForResults() {
+            fetch('/get-predictions')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.predictions) {
+                        const resultText = data.predictions.includes('anomaly')
+                            ? "Anomaly Detected!"
+                            : "Traffic Appears Normal.";
+                        document.getElementById("results").innerText = resultText;
+                        document.getElementById("status").innerText = "Prediction Complete!";
+                    } else {
+                        setTimeout(pollForResults, 3000);
+                    }
+                })
+                .catch(err => {
+                    document.getElementById("status").innerText = "Error checking predictions.";
+                    console.error(err);
+                });
+        }
+    </script>
+</body>
+</html>

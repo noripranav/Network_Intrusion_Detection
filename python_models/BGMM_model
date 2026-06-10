@@ -1,0 +1,59 @@
+
+import pandas as pd
+import numpy as np
+import warnings
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.mixture import BayesianGaussianMixture
+from sklearn.metrics import accuracy_score, classification_report
+import joblib
+
+warnings.filterwarnings("ignore")
+
+# Load full dataset
+train_df = pd.read_csv("Train_data.csv")
+
+# Label encode categorical features
+label_encoders = {}
+for col in ['protocol_type', 'service', 'flag']:
+    le = LabelEncoder()
+    train_df[col] = le.fit_transform(train_df[col])
+    label_encoders[col] = le
+    joblib.dump(le, f"python_models/models/BGMM_model/le_{col}.pkl")
+
+# Create binary labels: 0 for normal, 1 for anomaly
+train_df["label"] = train_df["class"].apply(lambda x: 0 if x == "normal" else 1)
+
+# Full data for training and evaluation
+X = train_df.drop(columns=['class', 'label'])
+y = train_df['label']
+
+# Standardize features
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# Train BGMM on full dataset (unsupervised)
+bgmm = BayesianGaussianMixture(n_components=25, covariance_type='full', random_state=42)
+bgmm.fit(X_scaled)
+
+# Score all samples
+scores = -bgmm.score_samples(X_scaled)
+
+# Set threshold (based on overall distribution)
+threshold = np.percentile(scores, 100)
+
+# Predict anomalies
+y_pred = (scores > threshold).astype(int)
+
+# Evaluate
+acc = accuracy_score(y, y_pred)
+print(f"[INFO] Accuracy: {acc * 100:.2f}%")
+print(classification_report(y, y_pred, target_names=["Normal", "Anomaly"]))
+
+# Save model and artifacts
+joblib.dump(bgmm, "python_models/models/BGMM_model/bgmm_model.pkl")
+joblib.dump(scaler, "python_models/models/BGMM_model/scaler.pkl")
+joblib.dump(threshold, "python_models/models/BGMM_model/threshold.pkl")
+joblib.dump(X.columns.tolist(), "python_models/models/BGMM_model/feature_order.pkl")
+
+print("[INFO] Model, scaler, and threshold saved successfully.")
+print(f"[INFO] Anomaly threshold (98.5th percentile): {threshold:.4f}")
